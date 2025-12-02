@@ -1,29 +1,19 @@
-from flask import Flask, jsonify
-from models import db, User, Card, Movement
+from flask import Flask
+from models import db
+from routes import api
+from flask_jwt_extended import JWTManager
 
 app = Flask(__name__)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///exis.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+app.config["JWT_SECRET_KEY"] = "super-secret-key"  
+jwt = JWTManager(app)
+
 db.init_app(app)
 
-with app.app_context():
-    db.create_all()
+app.register_blueprint(api, url_prefix='/api')
 
-@app.route("/")
-def home():
-    return jsonify({"status": "Backend separato correttamente!"})
-
-@app.route("/api/users")
-def get_users():
-    all_users = User.query.all()
-    
-    users_list = []
-    for user in all_users:
-        users_list.append({
-            "id": user.id, 
-            "username": user.username
-        })
-        
-    return jsonify(users_list)
+if __name__ == '__main__':
+    app.run(debug=True, ssl_context='adhoc')
