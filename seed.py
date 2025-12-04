@@ -7,7 +7,7 @@ def seed_data():
         db.drop_all()
         db.create_all()
 
-        mario = User(username="mario", password="123", status=S_USER_ACTIVE)
+        mario = User(username="mario", password="123", status=S_USER_ACTIVE, secret_pin="12345")
         db.session.add(mario)
         db.session.commit()
 
@@ -16,7 +16,8 @@ def seed_data():
             holder="MARIO ROSSI", 
             exp_date="12/26", 
             user_id=mario.id,
-            status=S_CARD_ACTIVE
+            status=S_CARD_ACTIVE,
+            cvv="123"
         )
         
         mastercard = Card(
@@ -24,7 +25,8 @@ def seed_data():
             holder="MARIO ROSSI", 
             exp_date="08/25", 
             user_id=mario.id,
-            status=S_CARD_BLOCKED 
+            status=S_CARD_BLOCKED,
+            cvv="123" 
         )
         
         db.session.add(visa)
@@ -37,7 +39,7 @@ def seed_data():
         mov2 = Movement(amount=-800.00, description="Acquisto Laptop", card_id=mastercard.id)
         db.session.add(mov2)
 
-        luigi = User(username="luigi", password="123", status=S_USER_BLOCKED)
+        luigi = User(username="luigi", password="123", status=S_USER_BLOCKED, secret_pin="12345")
         db.session.add(luigi)
 
         db.session.commit()

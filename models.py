@@ -11,6 +11,7 @@ class User(db.Model):
     username = db.Column(KEY_USERNAME, db.String(80), unique=True, nullable=False)
     password = db.Column(KEY_PASSWORD, db.String(120), nullable=False)
     status = db.Column(KEY_STATUS, db.String(20), nullable=False, default=S_USER_ACTIVE)
+    secret_pin = db.Column(KEY_SECRET_PIN, db.String(5), nullable=False)
     
     cards = db.relationship('Card', backref='owner', lazy=True)
 
@@ -23,6 +24,7 @@ class Card(db.Model):
     exp_date = db.Column(KEY_EXP_DATE, db.String(5), nullable=False)
     user_id = db.Column(KEY_USER_ID_FK, db.Integer, db.ForeignKey(f"{TABLE_USER}.{KEY_USER_ID}"), nullable=False)
     status = db.Column(KEY_STATUS, db.String(20), nullable=False, default=S_CARD_ACTIVE)
+    cvv = db.Column(KEY_CVV, db.String(4), nullable=False)
     
     movements = db.relationship('Movement', backref='card', lazy=True)
 

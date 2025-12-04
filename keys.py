@@ -16,6 +16,8 @@ KEY_PAN = "pan"
 KEY_HOLDER = "holder"
 KEY_EXP_DATE = "exp_date"
 KEY_USER_ID_FK = "user_id"
+KEY_CVV = "cvv"
+KEY_SECRET_PIN = "secret_pin"
 
 # Valori Stato Carta
 S_CARD_ACTIVE = "active"
