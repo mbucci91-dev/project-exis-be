@@ -16,4 +16,10 @@ db.init_app(app)
 app.register_blueprint(api, url_prefix='/api')
 
 if __name__ == '__main__':
-    app.run(debug=True, ssl_context='adhoc')
+    on_render = os.environ.get('RENDER')
+    
+    if on_render:
+        port = int(os.environ.get("PORT", 10000))
+        app.run(host='0.0.0.0', port=port, debug=False)
+    else:
+        app.run(debug=True, ssl_context='adhoc')
