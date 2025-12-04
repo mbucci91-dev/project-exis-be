@@ -2,6 +2,7 @@ from flask import Flask
 from models import db
 from routes import api
 from flask_jwt_extended import JWTManager
+import os
 
 app = Flask(__name__)
 
