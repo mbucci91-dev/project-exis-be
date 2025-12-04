@@ -1,108 +1,74 @@
 from flask import Blueprint, jsonify, request
-from models import User, Card, Movement
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from keys import *
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+import services
+from exceptions import ResourceNotFound, PermissionDenied, AuthenticationError
 
 api = Blueprint('api', __name__)
 
-USER_NOT_FOUND = "L'utente richiesto non è presente nel sistema."
-CARD_NOT_FOUND = "La carta richiesta non esiste o è stata rimossa."
-LOGIN_FAILED = "Credenziali non valide. Riprova."
-USER_BLOCKED = "Utente bloccato. Contattare l'assistenza."
-FORBIDDEN_ACCESS = "Accesso negato. Risorsa non disponibile o non autorizzata."
-GENERIC_ERROR = "Si è verificato un errore imprevisto."
+GENERIC_ERROR = "Errore generico"
 
 def create_response(data=None, code=200, error_key=None):
     if code == 200:
-        message = "Success"
-        response_data = data
+        return jsonify({"message": "Success", "code": 200, "response": data}), 200
     else:
-        message = error_key
-        response_data = None
-
-    return jsonify({
-        "message": message,
-        "code": code,
-        "response": response_data
-    }), code
+        
+        msg = str(error_key) if error_key else GENERIC_ERROR
+        return jsonify({"message": msg, "code": code, "response": None}), code
 
 
 @api.route('/login', methods=['POST'])
 def login():
-    data = request.get_json()
-    req_user = data.get(KEY_USERNAME)
-    req_pass = data.get(KEY_PASSWORD)
+    try:
+        data = request.get_json()
+        if not data: return create_response(code=400, error_key="Dati mancanti")
 
-    if not req_user or not req_pass:
-         return create_response(code=400, error_key=GENERIC_ERROR) 
+        username = data.get(KEY_USERNAME)
+        password = data.get(KEY_PASSWORD)
 
-    user = User.query.filter_by(username=req_user).first()
+        result = services.authenticate_user(username, password)
+        
+        return create_response(data=result, code=200)
 
-    if user and user.password == req_pass:
-        if user.status == S_USER_BLOCKED:
-            return create_response(code=403, error_key=USER_BLOCKED)
-
-        access_token = create_access_token(identity=str(user.id))
-
-        return create_response(data={
-            "token": access_token,
-            KEY_USERNAME: user.username,
-            KEY_STATUS: user.status
-        }, code=200)
-    else:
-        return create_response(code=401, error_key=LOGIN_FAILED)
+    except AuthenticationError as e:
+        return create_response(code=401, error_key=str(e))
+    except PermissionDenied as e:
+        return create_response(code=403, error_key=str(e))
+    except Exception as e:
+        return create_response(code=500, error_key=GENERIC_ERROR)
 
 
 @api.route('/cards', methods=['GET'])
 @jwt_required()
 def get_cards():
-    
-    current_user_id = int(get_jwt_identity())
-    
-    user = User.query.get(current_user_id)
-    
-    if not user:
-        return create_response(code=404, error_key=USER_NOT_FOUND)
+    try:
+        current_user_id = int(get_jwt_identity())
+        
+        result = services.get_user_cards(current_user_id)
+        
+        return create_response(data=result, code=200)
 
-    user_cards = Card.query.filter_by(user_id=current_user_id).all()
-    
-    cards_list = []
-    for card in user_cards:
-        cards_list.append({
-            KEY_CARD_ID: card.id,
-            "pan_masked": f"**** **** **** {card.pan[-4:]}",
-            KEY_HOLDER: card.holder,
-            KEY_EXP_DATE: card.exp_date,
-            KEY_STATUS: card.status
-        })
-    
-    return create_response(data=cards_list, code=200)
+    except ResourceNotFound as e:
+        return create_response(code=404, error_key=str(e))
+    except Exception as e:
+        print(e)
+        return create_response(code=500, error_key=GENERIC_ERROR)
 
 
 @api.route('/movements/<int:card_id>', methods=['GET'])
 @jwt_required()
 def get_movements(card_id):
-    current_user_id = int(get_jwt_identity())
+    try:
+        current_user_id = int(get_jwt_identity())
 
-    card = Card.query.get(card_id)
-    if not card:
-        return create_response(code=404, error_key=CARD_NOT_FOUND)
-    
-    if card.user_id != current_user_id:
-        return create_response(code=403, error_key=FORBIDDEN_ACCESS)
-
-    if card.status != S_CARD_ACTIVE:
-         return create_response(code=403, error_key=FORBIDDEN_ACCESS)
-
-    movements = Movement.query.filter_by(card_id=card_id).order_by(Movement.date.desc()).all()
-    
-    mov_list = []
-    for mov in movements:
-        mov_list.append({
-            KEY_MOV_ID: mov.id,
-            KEY_DATE: mov.date.strftime('%d/%m/%Y'),
-            KEY_AMOUNT: mov.amount,
-            KEY_DESCRIPTION: mov.description
-        })
+        result = services.get_card_movements(current_user_id, card_id)
         
-    return create_response(data=mov_list, code=200)
+        return create_response(data=result, code=200)
+
+    except ResourceNotFound as e:
+        return create_response(code=404, error_key=str(e))
+    except PermissionDenied as e:
+        return create_response(code=403, error_key=str(e))
+    except Exception as e:
+        print(e)
+        return create_response(code=500, error_key=GENERIC_ERROR)
