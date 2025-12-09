@@ -3,13 +3,16 @@ from models import db
 from routes import api
 from flask_jwt_extended import JWTManager
 import os
+from flask_cors import CORS
 
 app = Flask(__name__)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///exis.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config["JWT_SECRET_KEY"] = "super-secret-key-cambiami-in-produzione"
 
-app.config["JWT_SECRET_KEY"] = "super-secret-key"  
+CORS(app, resources={r"/api/*": {"origins": "*"}}, allow_headers=["Content-Type", "Authorization"])
+
 jwt = JWTManager(app)
 
 db.init_app(app)
