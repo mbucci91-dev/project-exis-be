@@ -14,6 +14,7 @@ TABLE_CARD = "card"
 KEY_CARD_ID = "id"
 KEY_PAN = "pan"
 KEY_HOLDER = "holder"
+KEY_CIRCUIT = "circuit"
 KEY_EXP_DATE = "exp_date"
 KEY_USER_ID_FK = "user_id"
 KEY_CVV = "cvv"
@@ -23,6 +24,11 @@ KEY_SECRET_PIN = "secret_pin"
 S_CARD_ACTIVE = "active"
 S_CARD_BLOCKED = "blocked"
 S_CARD_IN_ACTIVATION = "in activation"
+
+# Valori Circuiti
+C_VISA = "Visa"
+C_MASTERCARD = "Mastercard"
+C_AMEX = "Amex"
 
 # --- MOVIMENTO ---
 TABLE_MOVEMENT = "movement"

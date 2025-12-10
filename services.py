@@ -49,7 +49,8 @@ def get_user_cards(user_id):
             "cvv_masked": "***",
             KEY_HOLDER: card.holder,
             KEY_EXP_DATE: card.exp_date,
-            KEY_STATUS: card.status
+            KEY_STATUS: card.status,
+            KEY_CIRCUIT: card.circuit
         })
     return results
 
@@ -71,7 +72,7 @@ def get_card_movements(user_id, card_id):
     for mov in movements:
         results.append({
             KEY_MOV_ID: mov.id,
-            KEY_DATE: mov.date.strftime('%d/%m/%Y'),
+            KEY_DATE: mov.date.strftime('%d/%m/%Y - %H:%M'),
             KEY_AMOUNT: mov.amount,
             KEY_DESCRIPTION: mov.description
         })

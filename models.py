@@ -21,6 +21,7 @@ class Card(db.Model):
     id = db.Column(KEY_CARD_ID, db.Integer, primary_key=True)
     pan = db.Column(KEY_PAN, db.String(16), nullable=False)
     holder = db.Column(KEY_HOLDER, db.String(50), nullable=False)
+    circuit = db.Column(KEY_CIRCUIT, db.String(20), nullable=False)
     exp_date = db.Column(KEY_EXP_DATE, db.String(5), nullable=False)
     user_id = db.Column(KEY_USER_ID_FK, db.Integer, db.ForeignKey(f"{TABLE_USER}.{KEY_USER_ID}"), nullable=False)
     status = db.Column(KEY_STATUS, db.String(20), nullable=False, default=S_CARD_ACTIVE)
