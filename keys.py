@@ -4,6 +4,10 @@ KEY_USER_ID = "id"
 KEY_USERNAME = "username"
 KEY_PASSWORD = "password"
 KEY_STATUS = "status"
+KEY_EMAIL = "email"
+KEY_DOB = "dob"          # Date of Birth
+KEY_PHONE = "phone"
+KEY_ADDRESS = "address"
 
 # Valori Stato Utente
 S_USER_ACTIVE = "Active"

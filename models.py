@@ -12,6 +12,10 @@ class User(db.Model):
     password = db.Column(KEY_PASSWORD, db.String(120), nullable=False)
     status = db.Column(KEY_STATUS, db.String(20), nullable=False, default=S_USER_ACTIVE)
     secret_pin = db.Column(KEY_SECRET_PIN, db.String(5), nullable=False)
+    email = db.Column(KEY_EMAIL, db.String(120), nullable=False, unique=True)
+    dob = db.Column(KEY_DOB, db.String(10), nullable=False) # Formato "DD/MM/YYYY"
+    phone = db.Column(KEY_PHONE, db.String(20), nullable=False)
+    address = db.Column(KEY_ADDRESS, db.String(200), nullable=False)
     
     cards = db.relationship('Card', backref='owner', lazy=True)
 

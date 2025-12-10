@@ -78,6 +78,20 @@ def get_card_movements(user_id, card_id):
         })
     return results
 
+def get_user_profile(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        raise ResourceNotFound(USER_NOT_FOUND)
+    return {
+        KEY_USERNAME: user.username,
+        KEY_STATUS: user.status,
+        KEY_EMAIL: user.email,
+        KEY_DOB: user.dob,
+        KEY_PHONE: user.phone,
+        KEY_ADDRESS: user.address,
+        KEY_USER_ID: user.id
+    }
+
 def create_pin_challenge(user_id):
 
     indices = random.sample(range(0, 5), 2)

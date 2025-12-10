@@ -74,6 +74,22 @@ def get_movements(card_id):
         print(e)
         return create_response(code=500, error_key=GENERIC_ERROR)
     
+@api.route('/profile', methods=['GET'])
+@jwt_required()
+def get_profile_endpoint():
+    try:
+        current_user_id = int(get_jwt_identity())
+        
+        result = services.get_user_profile(current_user_id)
+        
+        return create_response(data=result, code=200)
+
+    except ResourceNotFound as e:
+        return create_response(code=404, error_key=str(e))
+    except Exception as e:
+        print(e)
+        return create_response(code=500, error_key=GENERIC_ERROR)
+    
 
 @api.route('/auth/challenge', methods=['POST'])
 @jwt_required()
