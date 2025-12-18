@@ -31,17 +31,39 @@ def seed_data():
         )
         
         mastercard = Card(
-            pan="5100123456789010", 
+            pan="5100123456788022", 
             holder="MARIO ROSSI", 
             exp_date="08/25", 
             user_id=mario.id,
-            status=S_CARD_BLOCKED,
+            status=S_CARD_ACTIVE,
             cvv="123",
             circuit=C_MASTERCARD 
+        )
+
+        mastercard2 = Card(
+            pan="5100432156787809", 
+            holder="MARIO ROSSI", 
+            exp_date="09/27", 
+            user_id=mario.id,
+            status=S_CARD_ACTIVE,
+            cvv="321",
+            circuit=C_MASTERCARD 
+        )
+
+        visa2 = Card(
+            pan="4000123456786502", 
+            holder="MARIO ROSSI", 
+            exp_date="11/28", 
+            user_id=mario.id,
+            status=S_CARD_ACTIVE,
+            cvv="456",
+            circuit=C_VISA
         )
         
         db.session.add(visa)
         db.session.add(mastercard)
+        db.session.add(mastercard2)
+        db.session.add(visa2)
         db.session.commit()
 
         mov1 = Movement(amount=-50.00, description="Spesa Carrefour", card_id=visa.id, date=datetime(2025, 12, 1, 14, 30))
