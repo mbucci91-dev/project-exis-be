@@ -1,0 +1,340 @@
+openapi: 3.0.0
+info:
+  title: Project Exis API
+  description: >
+    API Backend per Banking App.
+    Include Auth JWT, Profilo Utente, Gestione Carte (con Circuiti),
+    Challenge-Response (PIN) e Crittografia Payload (Fernet).
+  version: 1.2.0
+servers:
+  - url: https://127.0.0.1:5000/api
+    description: Server di Sviluppo Locale (HTTPS)
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # --- WRAPPER STANDARD ---
+    ApiResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Success"
+        code:
+          type: integer
+          example: 200
+        response:
+          type: object
+          nullable: true
+
+    # --- INPUT ---
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          example: "mario"
+        password:
+          type: string
+          example: "123"
+
+    ChallengePayload:
+      type: object
+      required:
+        - digits
+        - challenge_token
+      properties:
+        digits:
+          type: array
+          description: "Le due cifre del PIN richieste (es. la 1^ e la 5^)"
+          items:
+            type: string
+          example: ["1", "5"]
+        challenge_token:
+          type: string
+          description: "Il token ricevuto dalla chiamata /auth/challenge"
+
+    # --- OUTPUT DATI ---
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+          example: "mario"
+        email:
+          type: string
+          example: "mario.rossi@exis.it"
+        phone:
+          type: string
+          example: "+39 333 1234567"
+        dob:
+          type: string
+          example: "15/05/1985"
+        address:
+          type: string
+          example: "Via Roma 10, Milano"
+        status:
+          type: string
+          example: "Active"
+
+    CardSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        pan_masked:
+          type: string
+          example: "**** **** **** 9010"
+        holder:
+          type: string
+          example: "MARIO ROSSI"
+        exp_date:
+          type: string
+          example: "12/26"
+        circuit:
+          type: string
+          example: "Visa"
+        status:
+          type: string
+          example: "active"
+        cvv_masked:
+          type: string
+          example: "***"
+
+    Movement:
+      type: object
+      properties:
+        id:
+          type: integer
+        amount:
+          type: number
+          example: -50.00
+        description:
+          type: string
+          example: "Spesa Supermercato"
+        date:
+          type: string
+          description: "Formato dd/mm/yyyy - HH:MM"
+          example: "10/12/2025 - 14:30"
+
+    # --- OUTPUT SICUREZZA ---
+    ChallengeResponse:
+      type: object
+      properties:
+        indices_to_ask:
+          type: array
+          description: "Le posizioni del PIN che l'utente deve inserire"
+          items:
+            type: integer
+          example: [1, 5]
+        challenge_token:
+          type: string
+          description: "Token temporaneo da restituire insieme alle cifre"
+
+    EncryptedDetailsResponse:
+      type: object
+      properties:
+        info:
+          type: string
+          example: "Dati cifrati con Fernet (AES)"
+        temp_key:
+          type: string
+          description: "Chiave effimera per decifrare i dati lato client"
+        encrypted_data:
+          type: object
+          properties:
+            pan:
+              type: string
+              description: "PAN Cifrato"
+            cvv:
+              type: string
+              description: "CVV Cifrato"
+
+security:
+  - BearerAuth: []
+
+paths:
+  # --- AUTENTICAZIONE ---
+  /login:
+    post:
+      summary: Login Utente
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          token: {type: string}
+                          username: {type: string}
+                          status: {type: string}
+
+  /auth/challenge:
+    post:
+      summary: Richiesta Challenge PIN (Step 1)
+      description: Inizia il flusso di sicurezza per operazioni sensibili.
+      tags: [Sicurezza]
+      responses:
+        '200':
+          description: Sfida generata
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        $ref: '#/components/schemas/ChallengeResponse'
+
+  # --- PROFILO (NUOVO) ---
+  /profile:
+    get:
+      summary: Dati Profilo Utente
+      description: Restituisce anagrafica completa (email, telefono, ecc) tranne password e PIN.
+      tags: [Utente]
+      responses:
+        '200':
+          description: Profilo recuperato
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        $ref: '#/components/schemas/UserProfile'
+        '404':
+          description: Utente non trovato
+
+  # --- CARTE ---
+  /cards:
+    get:
+      summary: Lista Carte (Mascherata)
+      description: Include il campo 'circuit' (Visa/Mastercard).
+      tags: [Carte]
+      responses:
+        '200':
+          description: Lista recuperata
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CardSummary'
+
+  /cards/{card_id}/details:
+    post:
+      summary: Mostra Dati Sensibili (Step 2 - Richiede PIN)
+      tags: [Carte, Sicurezza]
+      parameters:
+        - name: card_id
+          in: path
+          required: true
+          schema: {type: integer}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChallengePayload'
+      responses:
+        '200':
+          description: Dati cifrati restituiti
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        $ref: '#/components/schemas/EncryptedDetailsResponse'
+        '403':
+          description: PIN errato
+
+  /cards/{card_id}/block:
+    post:
+      summary: Blocca Carta (Step 2 - Richiede PIN)
+      tags: [Carte, Sicurezza]
+      parameters:
+        - name: card_id
+          in: path
+          required: true
+          schema: {type: integer}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChallengePayload'
+      responses:
+        '200':
+          description: Carta bloccata
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          status: {type: string}
+                          new_status: {type: string}
+
+  # --- MOVIMENTI ---
+  /movements/{card_id}:
+    get:
+      summary: Lista Movimenti
+      tags: [Movimenti]
+      parameters:
+        - name: card_id
+          in: path
+          required: true
+          schema: {type: integer}
+      responses:
+        '200':
+          description: Movimenti recuperati
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Movement'
